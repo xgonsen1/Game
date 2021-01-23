@@ -1,6 +1,8 @@
 import {GAME_STATES, CUBE_STATES } from './utils';
 import Cube  from "./Cube";
 import Scene from "./Scene";
+import Unicorn from "./Unicorn";
+
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
 
@@ -12,6 +14,7 @@ export default class Game
 		this.stage = new Scene();
 		this.blocks = [];
 		this.counterBonus = 0;
+		this.unicornBonus = 0;
 		
 		this.mainContainer = document.getElementById('container');
 		this.scoreContainer = document.getElementById('score');
@@ -42,7 +45,10 @@ export default class Game
 		
 		document.addEventListener('keyup', e=>{
 			if(e.key == "t"){
+				if(this.unicornBonus != 0){
 					this.rebuildBlocks();
+					this.unsetUnicorn();
+				}
 				
 			} 
 		});
@@ -119,6 +125,16 @@ export default class Game
 		let currentBlock = this.blocks[this.blocks.length - 1];
 		let newBlocks = currentBlock.place();
 		
+
+		if(newBlocks.bonus){
+			this.bonus = true;
+			this.counterBonus++;
+		}
+		if(!newBlocks.bonus){
+			this.counterBonus = 0;
+			this.bonus = false;
+		}
+
 		this.newBlocks.remove(currentBlock.mesh);
 		if(newBlocks.placed) this.placedBlocks.add(newBlocks.placed);
 		if(newBlocks.chopped)
@@ -178,8 +194,23 @@ export default class Game
 		{
 			return this.endGame();
 		}
+
+		//bonus checking
+		if(this.counterBonus > 0){
+			this.scoreContainer.classList.add('bonus');
+			if(this.counterBonus === 3){
+				if(this.unicornBonus < 3){
+					this.unicorn = new Unicorn(this.stage.scene, this.getYPosition() + 5, () => {
+						this.unicorn.move(this.unicornBonus);
+					});
+					this.unicornBonus++
+					this.counterBonus = 0;
+				}
+			}
+		}
+		else this.scoreContainer.classList.remove('bonus');
 		
-		const score = blocks.length ? blocks.length : 0;
+		
 		this.updateScore();
 		this.getMovingCube();
 	
@@ -196,6 +227,16 @@ export default class Game
 		this.stage.setCamera(cameraSet * 2);
 	}
 
+	getYPosition(){
+		const blocks = this.placedBlocks.children;
+		const positionY = blocks.length ? blocks[blocks.length-1].position.y : 2;
+		return positionY;
+	}
+
+	unsetUnicorn(){
+		document.getElementById('unicorn' + this.unicornBonus.toString()).classList.add('hidden');
+		this.unicornBonus--;
+	}
 
 	updateScore(){
 		const score = this.placedBlocks.children.length ? this.placedBlocks.children.length : 0;
