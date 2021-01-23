@@ -40,6 +40,12 @@ export default class Game
 			if(e.keyCode == 32) this.onAction()
 		});
 		
+		document.addEventListener('keyup', e=>{
+			if(e.key == "t"){
+					this.rebuildBlocks();
+				
+			} 
+		});
 		document.addEventListener('click', e =>
 		{
 			if(this.bomb == null)
@@ -117,7 +123,46 @@ export default class Game
 		if(newBlocks.placed) this.placedBlocks.add(newBlocks.placed);
 		if(newBlocks.chopped)
 		{
-			//TODO animation
+			const object = {
+				x: newBlocks.chopped.position.x,
+				y: newBlocks.chopped.position.y,
+				z: newBlocks.chopped.position.z,
+				rotationX: newBlocks.chopped.rotation.x,
+				rotationY: newBlocks.chopped.rotation.y,
+				rotationZ: newBlocks.chopped.rotation.z
+			};
+			this.choppedBlocks.add(newBlocks.chopped);
+			
+			let rotateRandomness = 20;
+			const target = {
+				y: -30,
+				rotationX: newBlocks.plane == 'z' ? ((Math.random() * rotateRandomness) - (rotateRandomness/2)) : 0.1,
+				rotationZ: newBlocks.plane == 'x' ? ((Math.random() * rotateRandomness) - (rotateRandomness/2)) : 0.1,
+				rotationY: Math.random() * 0.5,
+				
+			};
+			
+			if(newBlocks.chopped.position[newBlocks.plane] > newBlocks.placed.position[newBlocks.plane])
+			{
+				target[newBlocks.plane] = 60 * Math.abs(newBlocks.direction);
+			}
+			else
+			{
+				target[newBlocks.plane] = -1*(60 * Math.abs(newBlocks.direction));
+			}
+			//console.log(object, target);
+			const animation = new TWEEN.Tween (object)
+			.to(target, (20*(0,5*newBlocks.chopped.position.y)))
+			.onUpdate(()=>{ 
+                newBlocks.chopped.position.x = object.x,
+				newBlocks.chopped.position.y = object.y,
+				newBlocks.chopped.position.z = object.z,
+				newBlocks.chopped.rotation.x = object.rotationX,
+				newBlocks.chopped.rotation.y = object.rotationY,
+				newBlocks.chopped.rotation.z = object.rotationZ
+            })
+			.onComplete(()=>this.choppedBlocks.remove(newBlocks.chopped))
+			.start();
  
 		}
 		
@@ -157,6 +202,56 @@ export default class Game
 		this.scoreContainer.innerHTML = String(score);
 	}
 	
+
+	rebuildBlocks(){
+		let blockPositions=this.placedBlocks.children;
+		const lastIndex = blockPositions.length -1;
+		
+		for (let i=0; i<blockPositions.length; i++){
+			const positionY = blockPositions[lastIndex - i].position.y;
+			const object = {
+				x:blockPositions[i].position.x,
+				y:blockPositions[i].position.y,
+				z:blockPositions[i].position.z
+			};
+
+			const target = {
+				y: positionY
+			};
+			//console.log(object,target, i);
+			const animation2 = new TWEEN.Tween(object)
+			.to(target, 100)
+			//.delay(lastIndex-i * 100)
+			.onUpdate(()=>{
+				blockPositions[i].position.x = object.x,
+				blockPositions[i].position.y = object.y,
+				blockPositions[i].position.z = object.z
+			})
+			.onComplete(()=>{
+				
+			})
+			.start()
+		}
+		
+		const pom= this.blocks.slice(0, this.blocks.length - 1);
+		this.blocks = pom;
+
+		const lastCube = this.blocks[this.blocks.length-1];
+		const lastBlock = this.blocks[0];
+		 
+		lastCube.position.x = 0;
+		lastCube.position.z = 0;
+		lastCube.dimension = lastBlock.dimension;
+		
+		console.log(this.blocks);
+
+		//odstranim hornu kocku
+		this.newBlocks.remove(this.newBlocks.children[1]);
+		
+		let newKidOnTheBlock = new Cube(lastCube);
+		this.newBlocks.add(newKidOnTheBlock.mesh);
+		this.blocks.push(newKidOnTheBlock);
+	}
 	
 	endGame()
 	{
