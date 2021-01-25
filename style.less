@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css?family=Comfortaa');
+
+@color-dark: #e9799f;
+
+html, body
+{
+	margin: 0;
+	overflow: hidden;
+	height: 100%;
+	width: 100%;
+	position: relative;
+	font-family: 'Comfortaa', cursive;
+	background: rgb(90,212,255);
+	background: linear-gradient(0deg, rgba(90,212,255,1) 0%, rgba(248,248,248,1) 69%);
+}
+
+  
+#container
+{
+	width: 100%;
+	height: 100%;
+	
+	#score
+	{
+		position: absolute;
+		top: 20px;
+		width: 100%;
+		text-align: center;
+		font-size: 10vh;
+		transition: transform 0.5s ease;
+		color: @color-dark;
+		transform: translatey(-200px) scale(1);
+		&.bonus{
+			color: #29e07b;
+		}
+	}
+
+	#game
+	{
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+	}
+
+	.blink {
+		animation: blinker 1s linear infinite;
+	  }
+	  
+	  @keyframes blinker {
+		50% {
+		  opacity: 0;
+		}
+	  }
+
+	#countdown{
+		font-size: 10vh;
+		position: absolute;
+		top: 13vh;
+		transform: translatey(0px) scale(1);
+		width: 100%;
+		text-align: center;
+	}
+
+	.bonus-container{
+		position: absolute;
+		right: 0;
+		top: 0;
+		width: 250px;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+		padding-right: 5px;
+		img{
+			height: 11vh;
+		}
+		.hidden{
+			visibility: hidden;
+		}
+	}
+	
+	.game-over
+	{
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 85%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		
+		*
+		{
+			transition: opacity 0.5s ease, transform 0.5s ease;
+			opacity: 0;
+			transform: translatey(-50px);
+			color: @color-dark;
+		}
+		
+		h2
+		{
+			margin: 0;
+			padding: 0;
+			font-size: 40px;
+		}
+	}
+	
+	.game-ready
+	{
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: space-around;
+		
+		#start-button
+		{
+			transition: opacity 0.5s ease, transform 0.5s ease;
+			opacity: 0;
+			transform: translatey(-50px);
+			
+			border: 3px solid @color-dark;
+			padding: 10px 20px;
+			background-color: transparent;
+			color: @color-dark;
+			font-size: 30px;
+		}
+	}
+	
+	#instructions
+	{
+		position: absolute;
+		width: 100%;
+		top: 16vh;
+		left: 0;
+		text-align: center;
+		transition: opacity 0.5s ease, transform 0.5s ease;
+		
+		opacity: 0;
+		div{
+			padding-bottom: 10px;
+		}
+		&.hide
+		{
+			opacity: 0 !important;
+		}
+	}
+	
+	&.playing, &.resetting
+	{
+		#score
+		{
+			transform: translatey(0px) scale(1);
+		}
+	}
+	
+	&.playing
+	{
+		#instructions
+		{
+			opacity: 1;
+		}
+	}
+	
+	&.ready
+	{
+		
+		
+		.game-ready
+		{
+			#start-button
+			{
+				opacity: 1;
+				transform: translatey(0);
+			}
+		}
+	}
+	
+	&.ended
+	{
+		#score
+		{
+			transform: translatey(6vh) scale(1.5);
+		}
+		
+		.game-over
+		{
+			*
+			{
+				opacity: 1;
+				transform: translatey(0);
+			}
+			
+			p
+			{
+				transition-delay: 0.3s;
+			}
+		}
+	}
+}
+
+
+
+

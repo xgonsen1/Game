@@ -1,7 +1,10 @@
 import {GAME_STATES, CUBE_STATES } from './utils';
+import Bomb  from "./Bomb";
 import Cube  from "./Cube";
+import ExplodeAnimation  from "./ExplodeAnimation";
 import Scene from "./Scene";
 import Unicorn from "./Unicorn";
+
 
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
@@ -15,6 +18,10 @@ export default class Game
 		this.blocks = [];
 		this.counterBonus = 0;
 		this.unicornBonus = 0;
+
+		this.explosionParts = [];
+		this.bomb = null;
+		this.countDown = 3;
 		
 		this.mainContainer = document.getElementById('container');
 		this.scoreContainer = document.getElementById('score');
@@ -51,6 +58,17 @@ export default class Game
 				}
 				
 			} 
+
+			if(e.key == "a"){
+				if(this.bomb!== null ){
+					this.bomb.moveLeft();
+				}
+			}
+			if(e.key == "d"){
+				if(this.bomb !== null){
+					this.bomb.moveRight();
+				}
+			}
 		});
 		document.addEventListener('click', e =>
 		{
@@ -210,9 +228,24 @@ export default class Game
 		}
 		else this.scoreContainer.classList.remove('bonus');
 		
-		
+		const score = blocks.length ? blocks.length : 0;
 		this.updateScore();
-		this.getMovingCube();
+
+		//nahodne pridana bomba
+		const random = Math.floor(Math.random() * Math.floor(10));
+		//console.log(random % 7 == 0, random)
+
+		//if(score > 10 && random % 7 == 0 && !this.bonus){
+		if(score == 5 || score == 10){
+			this.bomb = new Bomb(this.stage.scene, this.getYPosition(), () =>{
+				this.bomb.move();
+			});
+			this.setTime();
+		}
+		//normalne kocka sa pridava
+		else{
+			this.getMovingCube();
+		}
 	
 		if(this.blocks.length >= 5) this.instructions.classList.add('hide');
 
@@ -242,8 +275,104 @@ export default class Game
 		const score = this.placedBlocks.children.length ? this.placedBlocks.children.length : 0;
 		this.scoreContainer.innerHTML = String(score);
 	}
-	
 
+	checkBombDistance(){
+		const bomb = this.bomb.object.position;
+		console.log(this.bomb.object.position.x);
+		if(bomb.x > 20 || bomb.x < 0){
+			return true;
+		}
+		return false;
+	}
+
+	setTime(){
+        var timer = setInterval(()=>{
+			if(this.countDown <= 0){
+				clearInterval(timer);
+				if(this.checkBombDistance()){
+					document.getElementById("countdown").innerHTML = "LUCKY YOU!";
+					this.explosionParts.push(new ExplodeAnimation(0, this.getYPosition(), 0x21db53, this.stage.scene));
+					this.stage.removeElement(this.bomb.object);
+					this.bomb = null;
+					setTimeout(() => {
+						this.getMovingCube();
+					
+						document.getElementById("countdown").innerHTML = "";
+						this.countDown = 3;
+					}, 1000);
+				}
+				else this.explode();
+			} else {
+				document.getElementById("countdown").innerHTML = this.countDown;
+			}
+        	this.countDown -= 1;
+        }, 500);
+	}
+
+	explode(){
+		document.getElementById("countdown").innerHTML = "BOOM!";
+		this.explosionParts.push(new ExplodeAnimation(0, this.getYPosition(), 0xad0e20, this.stage.scene));
+		this.stage.removeElement(this.bomb.object);
+		this.bomb = null;
+
+		const blockPositions=this.placedBlocks.children;
+		const score = blockPositions.length;
+		//pre istotu zoradenie od najnizsieho po najvyssi kvoli rebuildu kociek
+		blockPositions.sort((a, b) => (a.position.y > b.position.y) ? 1 : -1);
+		//console.log(blockPositions);
+		//nahodne cislo 1 0 do 10
+		let random = Math.floor(Math.random() * Math.floor(10));
+		random = random < score ? random :  Math.floor(Math.random() * Math.floor(5));
+		random = random == 0 ? 1 : random;
+		//console.log(this.blocks.length - 1, blockPositions.length);
+
+		//animacia
+		const lastIndex = score - 1;
+		const movementSpeed = 100;
+		if(random < score){
+			//console.log(random);
+			for(let i = lastIndex ; i > lastIndex-random; i--){
+				const object = {
+					x:blockPositions[i].position.x,
+					y:blockPositions[i].position.y,
+					z:blockPositions[i].position.z
+				};
+				const target = {
+					x: 	(Math.random() * movementSpeed)-(movementSpeed/2),
+					y: 	(Math.random() * movementSpeed)-(movementSpeed/2),
+					z:	(Math.random() * movementSpeed)-(movementSpeed/2)
+				};
+				const animation3 = new TWEEN.Tween(object)
+					.to(target, 500)
+					//.delay(lastIndex-i * 100)
+					.onUpdate(()=>{
+						blockPositions[i].position.x = object.x,
+						blockPositions[i].position.y = object.y,
+						blockPositions[i].position.z = object.z
+					})
+					.onComplete(()=> {
+						this.placedBlocks.remove(this.placedBlocks.children[i]);
+						const cameraSet = this.placedBlocks.children.length ? this.placedBlocks.children.length : 1;
+						this.stage.setCamera(cameraSet * 2);
+						this.updateScore();
+					})
+					.start();
+			}
+		}
+		//console.log(this.blocks.lenght - 1, blockPositions.length);
+		const pom = this.blocks.slice(0, this.blocks.length-random);
+		//console.log(this.blocks, this.placedBlocks.children);
+		this.blocks = pom;
+		//console.log(this.blocks);
+		setTimeout(() => {
+			this.getMovingCube();
+		
+			document.getElementById("countdown").innerHTML = "";
+			this.countDown = 3;
+		}, 1000);
+		
+	}
+	
 	rebuildBlocks(){
 		let blockPositions=this.placedBlocks.children;
 		const lastIndex = blockPositions.length -1;
@@ -288,10 +417,12 @@ export default class Game
 
 		//odstranim hornu kocku
 		this.newBlocks.remove(this.newBlocks.children[1]);
+
+		this.getMovingCube(lastCube);
 		
-		let newKidOnTheBlock = new Cube(lastCube);
+		/*let newKidOnTheBlock = new Cube(lastCube);
 		this.newBlocks.add(newKidOnTheBlock.mesh);
-		this.blocks.push(newKidOnTheBlock);
+		this.blocks.push(newKidOnTheBlock);*/
 	}
 	
 	endGame()
@@ -302,6 +433,12 @@ export default class Game
 	tick()
 	{
 		this.blocks[this.blocks.length - 1].tick();
+
+		var pCount = this.explosionParts.length;
+		while(pCount--) {
+		  this.explosionParts[pCount].update();
+		}
+
 		this.stage.render();
 		requestAnimationFrame(() => {this.tick()});
 		TWEEN.update();
