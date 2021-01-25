@@ -235,8 +235,8 @@ export default class Game
 		const random = Math.floor(Math.random() * Math.floor(10));
 		//console.log(random % 7 == 0, random)
 
-		//if(score > 10 && random % 7 == 0 && !this.bonus){
-		if(score == 5 || score == 10){
+		if(score > 10 && random % 7 == 0 && !this.bonus){
+		//if(score == 5 || score == 10){
 			this.bomb = new Bomb(this.stage.scene, this.getYPosition(), () =>{
 				this.bomb.move();
 			});
